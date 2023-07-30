@@ -253,7 +253,7 @@ arr.map(item => return <li key= {item.id}>{item}</li>
 
 #### 推荐方式
 
-> npx会现在cli,然后通过cli生成项目,生成完毕后自动删除下载的cli,节省内存空间
+> npx会先下载cli,然后通过cli生成项目,生成完毕后自动删除下载的cli,节省内存空间
 
 `npx create-react-app 项目名称`
 
@@ -1399,3 +1399,373 @@ newProps,newState,foceUpdate()强制更新
 子组件 componentWillUnmount()
 
 父组件 componentWillUnmount()
+
+### 虚拟DOM
+
+> react核心库: 
+>
+> react-scripts => 提供createElement方法,将jsx转换为虚拟DOM,文件导出为React
+>
+> react-dom => 提供render方法将虚拟DOM渲染,并放在指定容器中,文件导出为ReactDOM
+
+#### 整体流程: 
+
+1. `jsx`语法通过`babel`编译为`React.createElement(type,props,...children)`的形式
+2. `react`调用`createElement`方法生成虚拟DOM
+3. `react`调用`ReactDOM.render(vDOM,root)`方法将虚拟DOM渲染成真实DOM
+
+#### 实现简易版本React前提
+
+将`react-scripts`库的版本降低到3.x.x,高版本库会自动调用`ReactDOM.render()`方法,不利于手动实现
+
+#### 实现react.createElement方法
+
+实际就是模拟`react-scripts`这个库,react通过该方法将jsx转换成虚拟DOM,babel转义jsx语法后会自动调用react的createElement方法,因此先新建模块`react.js`并导出`React`,在使用的页面导入后,babel运行时就会调用我们模拟的`createElement`方法了:
+
+1. 新建:
+
+   ![image-20230730145044393](React.assets/image-20230730145044393.png)
+
+2. 使用:
+
+   ![image-20230730002750722](React.assets/image-20230730002750722.png)
+
+接下来先引入正经的react看看其虚拟DOM结构 : 
+
+![image-20230730150737784](React.assets/image-20230730150737784.png)
+
+知道结构后照猫画虎,实现自己的createElement方法:
+
+1. 根据参数生成一个对象
+
+```js
+react.js
+/**
+ * @message: jsx转换成虚拟DOM 实现react-scripts中的方法: createElement
+ * @param {*} type 标签名称
+ * @param {*} props 配置
+ * @param {array} children 子元素
+ * @return {*}
+ * @since: 2023-07-29 12:30:31
+ */
+function  createElement(type,props,...children){
+  // 为了方便这里将原来props内的children写在了外层,对字符串和数字进行处理,标记$$type便于后面处理
+  children = children.flat(Infinity).map(item => {
+    if(typeof item === "object"){
+      return item
+    }
+    if(typeof item === "string" || typeof item === "number"){
+      return {
+        $$type: REACT_TEXT,
+        inner: item
+      }
+    }
+    return item
+  }).filter(item => typeof item !== "boolean")
+  return {
+    $$type: REACT_ELEMENT,
+    type,
+    props,
+    children
+  }
+}
+```
+
+运行查看效果:
+
+![image-20230730004335797](React.assets/image-20230730004335797.png)
+
+#### 实现ReactDOM.render方法
+
+实际模拟的时`react-dom`这个库,该方法接收两个参数: 虚拟DOM和容器元素,先新建这个模块,便于导入使用 :
+
+1. 新建
+
+   ![image-20230730003412053](React.assets/image-20230730003412053.png)
+
+2. 使用:
+
+   ![image-20230730003509590](React.assets/image-20230730003509590.png)
+
+该方法主要做了以下事情:
+
+1. 根据虚拟DOM的type的不同创建不同的真实DOM,包括以下几种
+   1. 类组件
+   2. 标签元素
+   3. 文本节点
+2. 给真实DOM绑定虚拟DOM中props包含的属性
+   1. 事件
+   2. 类名
+   3. 内联属性
+
+```js
+react-dom.js
+/**
+ * @message: 主渲染方法
+ * @param {*} tree 虚拟DOM createElement将jsx转换后的产物
+ * @param {*} root 容器
+ * @since: 2023-07-29 01:25:05
+ */
+function render(tree,root){
+  let rDom = getRealDOM(tree)
+  root.append(rDom)
+}
+/**
+ * @message: 根据虚拟DOM树创建真实DOM
+ * @param {*} tree 虚拟DOM
+ * @return {HTMLElement} 真实DOM
+ * @since: 2023-07-29 01:22:15
+ */
+function getRealDOM(tree){
+  let rDom;
+  if(tree.type?.isComponent){ //类组件
+    rDom = createComRdom(tree)
+    return rDom
+  }
+  if(tree.$$type === REACT_ELEMENT){ //react元素
+    rDom = document.createElement(tree.type)
+    let isHaveChild = tree.children && tree.children.length > 0
+    if(isHaveChild){
+      tree.children.forEach(item => {
+        rDom.append(getRealDOM(item)) //有子元素递归生成真实节点
+      })
+    }
+    rDom = addDomProps(rDom,tree.props,tree)
+    return rDom
+  }
+  if(tree.$$type === REACT_TEXT) { //文本节点
+    rDom = document.createTextNode(tree.inner)
+    return rDom
+  }
+}
+/**
+ * @message: 为真实DOM添加属性
+ * @param {HTMLElement} rDom 真实DOM
+ * @param {Object} props
+ * @return {HTMLElement} 挂载好属性的真实DOM
+ * @since: 2023-07-29 01:21:51
+ */
+function addDomProps(rDom,props){
+  delete props._self
+  delete props._source
+  for(let prop in props){
+    if(prop.slice(0,2) === "on"){ //事件
+      rDom[prop.toLowerCase()] = function(e){
+        if(props[prop].cmp){
+          let cmp = props[prop].cmp
+          batchUpdate(cmp,props[prop],[e])
+        }
+      }
+    }
+    if(prop === "style"){ //内联样式
+      Object.assign(rDom.style,props.style)
+    }
+    rDom[prop] = props[prop] //其他属性
+  }
+  return rDom
+}
+```
+
+运行查看效果:
+
+​	成功渲染:
+
+![image-20230730004354988](React.assets/image-20230730004354988.png)
+
+类组件的处理:
+
+1. 类组件继承自react.Component,因此在react-scripts中定义component类
+2. 类组件通过createElement方法转换后,react在其type属性赋值为定义的类组件,
+3. ReacDOM.render时判断虚拟DOM时候包含`isComponents`属性,如果包含说明时类组件,走类组件转换逻辑
+4. 通过type实例化类组件,调用类组件的render方法,获取到jsx
+5. 将jsx转换成真实DOM
+
+### 渲染类组件
+
+先看一下正经的类组件虚拟DOM: 
+
+![image-20230730005109529](React.assets/image-20230730005109529.png)
+
+实现步骤:
+
+1. 类组件继承自react.Component,因此在react-scripts中定义component类
+2. 类组件通过createElement方法转换后,react在其type属性赋值为定义的组件类,
+3. ReacDOM.render时判断虚拟DOM时候包含`isComponents`属性,如果包含说明时类组件,走类组件转换逻辑
+4. 通过type实例化类组件,调用类组件的render方法,获取到jsx
+5. 将jsx转换成真实DOM
+
+在`react.js`模块中新建`Component`类,以便继承:
+
+1. 主要包含props属性和`isCompoent`属性,后者是用来判断是否是类组件的
+2. `setState`方法
+
+```js
+react.js
+class Component {
+  constructor(props){
+    this.props = props
+  }
+  static isComponent = {}
+  setState(newState){
+    // 根据批处理开关判断是否进行批处理
+    if(this.isBatchUpdate){
+      this.batchUpdateArr.push(newState)
+    }else {
+      this.upDater(this.porps,newState)
+    }
+  }
+//批处理相关
+  upDater(nextprops,nextState){
+    this.props = nextprops
+    this.state = Object.assign({},this.state,nextState)
+  }
+}
+```
+
+`React.createElement`中添加对类组件的处理:
+
+1. 从虚拟DOM的type中拿到类
+2. 将类实例化
+3. 调用实例的render方法,拿到虚拟DOM并进行渲染
+4. 实现部分生命周期
+
+```js
+react-dom.js
+/**
+ * @message: 根据类组件创建真实DOM
+ * @param {*} tree 类组件虚拟DOM
+ * @return {HTMLElement}
+ * @since: 2023-07-29 13:57:03
+ */
+function createComRdom(tree){
+  const cmp = new tree.type(tree.props)
+  let newState = getDerivedStateFromProps(tree.type,cmp.props,cmp.state) //第一个生命周期,在render之前执行
+  Object.assign(cmp.state,newState)
+  let vDom = cmp.render()
+  let rDom = getRealDOM(vDom)
+  addCmpInHandle(vDom,cmp)
+  setTimeout(() => {
+    batchUpdate(cmp,cmp.componentDidMount)//第二个生命周期,在render之后执行,这里进行了setState的批处理,详情在后面
+  })
+  return rDom
+}
+/**
+ * @message: 声明周期getDerivedStateFromProps,在render之前执行
+ * @param {*} cmpClass 组件类
+ * @param {*} props 当前props
+ * @param {*} state 当前state
+ * @return {Object} 更新的state
+ * @since: 2023-07-29 13:57:54
+ */
+function getDerivedStateFromProps(cmpClass,props,state){
+  return cmpClass.getDerivedStateFromProps ? cmpClass.getDerivedStateFromProps(props,state) : {}
+}
+```
+
+### 批处理机制
+
+#### 前置概念
+
+**批处理机制(异步更新state)是指: react会合并同一行为过程中所有的`setState`结果,最终只对state进行一次修改,用以提升数据处理性能**
+
+```
+异步的现象: 
+state = {
+	num: 1
+}
+handlerCick = () => {
+	this.setState({
+		num: 2
+	})
+	cosnole.log(this.state.num) 这里输出的num还是1,但内部已经变成4了
+	this.setState({
+		num: 3
+	})
+	cosnole.log(this.state.num) 这里输出的num还是1,但内部已经变成4了
+	this.setState({
+		num: 4
+	})
+	cosnole.log(this.state.num) 这里输出的num还是1,但内部已经变成4了
+
+}
+```
+
+**全自动状态:**
+
+react中所有的行为更新state时都会通过批处理进行合并,数据是异步更新的效果
+
+**半自动状态: **
+
+react中异步,原生绑定事件为半自动状态,数据实时更新
+
+react中合成事件,生命周期为全自动状态,数据异步更新
+
+#### 什么情况下是全/半自动状态?
+
+1. react版本小于18或者版本大于等于18但入口API没有使用`ReactDOM提供的CreatRoot`API时,`setState`是半自动状态
+   - react可以控制的行为: 合成事件,生命周期,采用的是批处理,数据进行异步更新
+   - react无法控制的行为:  原生绑定事件,异步(宏任务,微任务)无法采用批处理,数据实时更新
+2. react版本大于等于18且入口API使用的是`ReactDOM提供的CreateRoot`API时,`setState`是全自动状态
+   - 任何行为都采用批处理,数据全部是异步更新
+
+**ReactDOM.createRoot就是react18新增的**
+
+#### 具体实现
+
+##### 生命周期中的批处理:
+
+1. 给实例添加一个标记,用来判断是否需要批处理
+2. 一个state批处理队列,存储setState的结果
+3. 将队列中的结果合并
+
+```js
+react-dom.js
+// 生命周期setState批处理
+function batchUpdate(cmp,fn,args){
+  cmp.isBatchUpdate = true //实例挂载标记
+  cmp.batchUpdateArr = [] //挂载批处理队列
+  fn && fn.apply(cmp,args) 执行生命周期
+  let nextState = cmp.batchUpdateArr.reduce((acc,curr) => { //合并state
+    return {...acc,...curr}
+  },{})
+  cmp.isBatchUpdate = false //关闭标记
+  cmp.upDater(cmp.props,nextState) //更新实例中的state
+  let newVDom = cmp.render() //重新生成虚拟DOM
+  console.log(newVDom)
+}
+```
+
+##### 合成事件中的批处理:
+
+react中合成事件是通过发布订阅模式,通过代理监听变化的,这里使用一点'奇技淫巧'来简单实现
+
+1. 在`createComRdom`在渲染类组件实例中将虚拟DOM和类组件实例,传递过来
+2. `addCmpInHandle`递归获取所有的事件,并在事件上挂载上实例,方便将事件进行批处理
+3. 在`addDomProps`中对事件进行`batchUpdate`处理
+
+```js
+react-dom.js
+//递归获取虚拟DOM上的所有事件,并且在事件函数上挂载组件实例
+function addCmpInHandle(vNode,cmp){
+  rucur(vNode)
+  console.log(handles)
+  function rucur(vNode){
+    let {props = {},children = []} = vNode
+    for(let key in props){
+      if(key.slice(0,2) === "on" && typeof props[key] === "function"){//获取所有绑定的事件进行处理
+        props[key].cmp = cmp
+      }
+    }
+    if(children.length > 0){
+      for(let item of children){
+        rucur(item)
+      }
+    }
+  }
+}
+```
+
+
+
+
+
