@@ -2070,7 +2070,7 @@ const Effect = () => {
 2. 判断是否传入ref参数,如果有则将其与内部创建的ref对象关联
 3. 调用传递进来的函数,获取需要暴露出去的API
 4. 将API挂载到关联的ref上
-5. 在组件卸载时清楚关联的ref
+5. 在组件卸载时清除关联的ref
 
 **想要使用useImperativeHandle那么子组件必须由forwardRef包裹起来,只有这样父组件才能获取到子组件的ref**
 
