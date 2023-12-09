@@ -63,7 +63,7 @@ function getElePos(ele) {
     y += ele.offsetTop;
     ele = ele.offsetParent;
   }
-  return { 
+  return {
     x,
     y,
   };
@@ -264,15 +264,15 @@ function _regValue(value) {
  * @return {*} 无
  * @since: 2022-05-19 10:58:49
  */
- function setCookie(cJson,t){
+function setCookie(cJson, t) {
   let date = new Date();
-  date.setTime(date.getTime() + t*1000);
+  date.setTime(date.getTime() + t * 1000);
   date = date.toGMTString();
-  if(t === Infinity){
-    date = "Fri, 31 Dec 9999 13:32:02 GMT"
+  if (t === Infinity) {
+    date = 'Fri, 31 Dec 9999 13:32:02 GMT';
   }
-  for(let key in cJson){
-    document.cookie = `${key}=${cJson[key]};expires =${date} `
+  for (let key in cJson) {
+    document.cookie = `${key}=${cJson[key]};expires =${date} `;
   }
 }
 /**
@@ -281,18 +281,18 @@ function _regValue(value) {
  * @return {Object} cookie名称为属性,对应cookie值为属性值,只包含存在的cookie
  * @since: 2022-05-19 11:40:59
  */
-function getCookie (ss) {
+function getCookie(ss) {
   let cookieStr = document.cookie;
-  let arr = []
+  let arr = [];
   for (let key of arguments) {
-    arr.push(key)
+    arr.push(key);
   }
   return cookieStr.split('; ').reduce(function (acc, curr) {
     if (arr.includes(curr.split('=')[0])) {
       acc[curr.split('=')[0]] = curr.split('=')[1];
     }
     return acc;
-  }, {})
+  }, {});
 }
 /**
  * @message: 删除cookie,实际就是重新设置cookie过期为0时间,
@@ -300,10 +300,10 @@ function getCookie (ss) {
  * @return {*}
  * @since: 2022-05-19 16:14:12
  */
- function removeCookie(nameStr) {
+function removeCookie(nameStr) {
   let obj = {};
   obj[nameStr] = null;
-  setCookie(obj,-1);
+  setCookie(obj, -1);
 }
 
 /**
@@ -312,12 +312,15 @@ function getCookie (ss) {
  * @return {*}拷贝过后的值
  * @since: 2022-06-08 09:26:45
  */
-function deepCopy(obj){
-  if(Array.isArray(obj)){
-    return newArr = obj.map(item => deepCopy(item))
+function deepCopy(obj) {
+  if (Array.isArray(obj)) {
+    return (newArr = obj.map((item) => deepCopy(item)));
   }
-  if(typeof obj === "object" && obj !== null){
-    return Object.entries(obj).reduce((acc,[key,value]) => (acc[key] = deepCopy(value),acc),{})
+  if (typeof obj === 'object' && obj !== null) {
+    return Object.entries(obj).reduce(
+      (acc, [key, value]) => ((acc[key] = deepCopy(value)), acc),
+      {}
+    );
   }
   return obj;
 }
@@ -335,11 +338,11 @@ function deepCopy(obj){
  * @return {*}
  * @since: 2022-06-20 19:15:22
  */
-function openFullScreen(ele = document){
+function openFullScreen(ele = document) {
   ele.msRequestFullscreen?.() ||
-  ele.requestFullscreen?.() || 
-  ele.webkitRequestFullScreen?.() ||
-  ele.mozRequestFullScreen?.() 
+    ele.requestFullscreen?.() ||
+    ele.webkitRequestFullScreen?.() ||
+    ele.mozRequestFullScreen?.();
 }
 /**
  * @message: 关闭全屏
@@ -350,50 +353,184 @@ function openFullScreen(ele = document){
 // 关闭全屏,默认参数为document
 function closeFwllScreen(ele = document) {
   ele.exitFullscreen?.() ||
-  ele.webkitCancelFullScreen?.() ||
-  ele.webkitExitFullscreen?.() ||
-  ele.mozCancelFullScreen?.() ||
-  ele.msExitFullscreen?.();
+    ele.webkitCancelFullScreen?.() ||
+    ele.webkitExitFullscreen?.() ||
+    ele.mozCancelFullScreen?.() ||
+    ele.msExitFullscreen?.();
 }
 
 /**
-     * @message:格式化时间戳
-     * @param {Number} stamp 时间戳
-     * @return {Array} 八个项分别代表个 时分秒的十位和个位
-     * @since: 2022-07-02 13:06:11
-     */    
- function framtTime(stamp){
-  let h = ~~(stamp / (60 * 60 * 1000))
-  let m = ~~((stamp - h * 60 * 60 * 1000) / (60*1000))
-  let s = ~~((stamp - h * 60*60*1000 - m * 60*1000) / 1000)
-  let hTen = String(h)[1]? String(h)[0] : '0'
-  let hUnits = String(h)[1]  || String(h)[0]
-  let mTen = String(m)[1]? String(m)[0] : '0'
-  let mUnits = String(m)[1]  || String(m)[0]
-  let sTen = String(s)[1] ? String(s)[0] : '0'
-  let sUnits = String(s)[1]  || String(s)[0]
-  return [hTen,hUnits,mTen,mUnits,sTen,sUnits]
-};
+ * @message:格式化时间戳
+ * @param {Number} stamp 时间戳
+ * @return {Array} 八个项分别代表个 时分秒的十位和个位
+ * @since: 2022-07-02 13:06:11
+ */
+function framtTime(stamp) {
+  let h = ~~(stamp / (60 * 60 * 1000));
+  let m = ~~((stamp - h * 60 * 60 * 1000) / (60 * 1000));
+  let s = ~~((stamp - h * 60 * 60 * 1000 - m * 60 * 1000) / 1000);
+  let hTen = String(h)[1] ? String(h)[0] : '0';
+  let hUnits = String(h)[1] || String(h)[0];
+  let mTen = String(m)[1] ? String(m)[0] : '0';
+  let mUnits = String(m)[1] || String(m)[0];
+  let sTen = String(s)[1] ? String(s)[0] : '0';
+  let sUnits = String(s)[1] || String(s)[0];
+  return [hTen, hUnits, mTen, mUnits, sTen, sUnits];
+}
 
 /**
-    * @message: 验证字符串是否是JSON数据
-    * @param {String} json
-    * @return {Boolean} true : 是,false : 不是
-    * @since: 2022-07-18 00:41:23
-    */   
- function isJSON(json){
+ * @message: 验证字符串是否是JSON数据
+ * @param {String} json
+ * @return {Boolean} true : 是,false : 不是
+ * @since: 2022-07-18 00:41:23
+ */
+function isJSON(json) {
   try {
-    JSON.parse(json)
-    return true
-  } catch(err){
-    return false
+    JSON.parse(json);
+    return true;
+  } catch (err) {
+    return false;
   }
- }
- /**
-  * @message: 判断浏览器是否是ie8及以下,ie8及以下,对-[-1,]的结果是NAN,
-  * @return {Boolean} 返回true表示是ie8及以下
-  * @since: 2022-07-21 16:48:48
-  */
- function isIE8(){
-  return !-[-1,]
- }
+}
+/**
+ * @message: 判断浏览器是否是ie8及以下,ie8及以下,对-[-1,]的结果是NAN,
+ * @return {Boolean} 返回true表示是ie8及以下
+ * @since: 2022-07-21 16:48:48
+ */
+function isIE8() {
+  return !-[-1];
+}
+
+/**
+ * @message: 通用类型判断,排除Element(DOM对象)之后通过Object.peototype.toString.call判断后用正则切出来后面的内容
+ * 通过constructor.name可以获取属于哪个自定义类实例化的对象
+ * @param {any} data
+ * @return {String} 返回类型名称
+ * @since: 2022-09-23 21:12:07
+ */
+function myTypeof(data) {
+  let toString = Object.prototype.toString;
+  let dataType =
+    data instanceof Element
+      ? 'Element'
+      : toString.call(data).replace(/\[object\s(.+)\]/, '$1');
+  // 若是自定义类实例化的对象,返回他的类名
+  if (dataType === 'Object') {
+    return data.constructor.name;
+  }
+  return dataType;
+}
+
+/**
+ * @message: 封装async/await错误处理函数,通过解构获取值 let [err,data] = await awaitWrap(promise)
+ * @param {Promise} promise 等待状态改变的promise
+ * @return {Array} 两个元素,走resolve时err为null,走reject时data为null
+ * @since: 2022-09-24 17:25:45
+ */
+function awaitWrap(promise) {
+  return promise.then((data) => [null, data]).catch((err) => [err, null]);
+}
+
+/**
+ * @message: 分时函数,需要重复执行大量任务的时候,将任务分开执行,防止阻塞线程,支持node环境和浏览器环境
+ * @param {Array | Number} datas 任务源数据或任务执行的次数
+ * @param {Function} consumer 任务 接收两个参数: 当前执行任务索引对应的源数据和索引
+ * @param {Function} chunkSplitor 分时器 决定在什么时机执行任务,执行多久
+ * chunkSplitor接收一个分时函数传出的Function参数task:当前执行的任务,使用者可以决定调用task的时间,
+ *  task接收一个使用者传递的函数hasTime返回布尔值,用于决定任务是否继续执行
+ *    hasTime(ms)自带一个参数pastTime表示当前任务执行的时间,可以利用这个函数用于设置执行所有任务是任务执行时间
+ * 可以不传递,默认使用requestIdleCallback
+ * @return {*}
+ * @since: 2023-12-06 17:41:47
+ */
+function perFormChunk(datas, consumer, chunkSplitor) {
+  // 参数归一化
+  if (typeof datas === 'number') {
+    datas = new Array(datas);
+  }
+  if (datas.length === 0) {
+    return;
+  }
+
+  if (!chunkSplitor && globalThis.requestIdleCallback) {
+    chunkSplitor = (task) => {
+      requestIdleCallback((idle) => {
+        task((pastTime) => idle.timeRemaining() > 0);
+      });
+    };
+  }
+  let i = 0;
+  const len = datas.length;
+
+  function _run() {
+    if (i >= len) {
+      return;
+    }
+    chunkSplitor((hasTime) => {
+      const now = Date.now();
+      // Date.now - now 告知外界当前循环中执行了多久,用于判断是否继续执行任务
+      while (hasTime(Date.now() - now) && i < len) {
+        consumer(datas[i], i);
+        i++;
+      }
+      _run();
+    });
+  }
+  _run();
+}
+
+/**
+ * @message: 并发任务队列,控制异步任务的并发数
+ * @param {Function[]} tasks 任务数组,每个元素都的是一个异步任务
+ * @param {Number} max 并发最大值
+ * @return {Promise}
+ * @since: 2023-12-08 15:53:51
+ */
+function paralleTask(tasks, max = 2) {
+  if (!tasks.length) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    let nextIndex = 0;
+    let finishedIndex = 0;
+
+    for (let i = 0; i < max && i < tasks.length; i++) {
+      _run();
+    }
+    function _run() {
+      const task = tasks[nextIndex];
+      nextIndex++;
+      task().then(() => {
+        finishedIndex++;
+        const isAllFinished = finishedIndex === tasks.length;
+        if (isAllFinished) {
+          resolve();
+        }
+
+        const isHasTask = nextIndex < tasks.length;
+        if (isHasTask) {
+          _run();
+        }
+      });
+    }
+  });
+}
+
+/**
+ * @message: 函数重载,一个对象上多个功能相似的方法,只是参数不同,避免出现大量相似的方法名,使用重载将对象上的多个方法合并成一个
+ * @param {Object} obj
+ * @param {String} name 合并后的方法名
+ * @param {Function} fn
+ * @return {*}
+ * @since: 2023-12-08 16:02:01
+ */
+function overload(obj, name, fn) {
+  const old = obj[name];
+  obj[name] = function (...args) {
+    if (fn.length === args.length) {
+      return fn.apply(this.args);
+    } else if (typeof old[name] === 'function') {
+      return old[name].apply(this, args);
+    }
+  };
+}
